@@ -7,6 +7,7 @@ const SIGNALING_SERVER = 'ws://localhost:3000';
 interface RegisterMessage {
   type: 'register';
   peerId: string;
+  peerType: 'node' | 'coordinator';
 }
 
 interface SignalMessage {
@@ -29,6 +30,11 @@ interface SignalResponse {
 interface ErrorResponse {
   type: 'error';
   message: string;
+}
+
+interface StatusUpdateMessage {
+  type: 'status_update';
+  status: 'idle' | 'busy';
 }
 
 type ServerMessage = RegisteredResponse | SignalResponse | ErrorResponse;
@@ -111,6 +117,16 @@ function initWorker(): void {
 
     taskCount++;
     taskCountEl.textContent = taskCount.toString();
+
+    // Reportar estado libre al servidor de señalización
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      const statusMsg: StatusUpdateMessage = {
+        type: 'status_update',
+        status: 'idle'
+      };
+      ws.send(JSON.stringify(statusMsg));
+      log('Estado actualizado: idle');
+    }
   };
 
   log('Worker inicializado');
@@ -122,10 +138,11 @@ function connectToSignaling(): void {
 
   ws.onopen = () => {
     log('Conectado al servidor de señalización');
-    // Registrar este peer
+    // Registrar este peer como nodo de cómputo
     const registerMsg: RegisterMessage = {
       type: 'register',
-      peerId: peerId
+      peerId: peerId,
+      peerType: 'node'
     };
     ws!.send(JSON.stringify(registerMsg));
   };
@@ -208,6 +225,16 @@ function handleIncomingData(data: Uint8Array): void {
 
     if (message.type === 'task') {
       log(`Nueva tarea recibida: ${message.taskId}`);
+
+      // Reportar estado ocupado al servidor de señalización
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const statusMsg: StatusUpdateMessage = {
+          type: 'status_update',
+          status: 'busy'
+        };
+        ws.send(JSON.stringify(statusMsg));
+        log('Estado actualizado: busy');
+      }
 
       // Enviar tarea al worker para ejecución segura
       const workerMsg: WorkerRequest = {

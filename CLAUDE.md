@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HackETSE is a P2P distributed computing network that converts old phones into compute nodes. The system uses WebRTC for peer-to-peer connections with a WebSocket signaling server for peer discovery. User code executes in isolated Web Workers for basic sandboxing.
+HackETSE is a P2P distributed computing network that converts old phones into compute nodes. The system uses WebRTC for peer-to-peer connections with a WebSocket signaling server for peer discovery and node registry. A task coordinator provides load balancing and automatic node selection. User code executes in isolated Web Workers for basic sandboxing.
 
 ## Repository Structure
 
-The project consists of two main TypeScript applications:
+The project consists of three main TypeScript applications:
 
-- **signaling-server/**: WebSocket signaling server (Node.js) that facilitates peer discovery and WebRTC signal exchange
+- **signaling-server/**: WebSocket signaling server (Node.js) that maintains node registry, facilitates peer discovery and WebRTC signal exchange
 - **peer-node/**: Capacitor-based mobile/web application that functions as a P2P compute node
+- **task-coordinator/**: Web application that submits tasks to the network with automatic load balancing
 
 ## Development Commands
 
@@ -57,24 +58,65 @@ npx cap open android      # Open in Android Studio
 
 For iOS: replace `android` with `ios` in the above commands.
 
+### Task Coordinator (task-coordinator/)
+
+Install and build:
+```bash
+cd task-coordinator
+npm install
+npm run build    # Compile TypeScript once to www/dist/
+npm run watch    # Compile in watch mode with auto-recompilation
+```
+
+Run in browser:
+1. Ensure signaling server is running
+2. Ensure at least one peer-node is connected
+3. Build TypeScript (see above)
+4. Open `www/index.html` in a browser
+5. Write code, select load balancing strategy, and execute tasks
+
 ## Architecture
 
 ### Communication Flow
 
-1. **Peer Registration**: Nodes connect to the signaling server via WebSocket and register with a unique peer ID (format: `peer-xxxxxxxxx`)
-2. **WebRTC Signaling**: Signaling server relays WebRTC signals between peers to establish P2P connections
-3. **P2P Task Execution**: Once connected, peers send task messages containing JavaScript code to be executed
-4. **Worker Isolation**: Receiving node forwards code to Web Worker for isolated execution
-5. **Result Return**: Worker results are sent back to the requesting peer via the P2P connection
+1. **Peer Registration**:
+   - Nodes connect to the signaling server via WebSocket and register with type 'node' (format: `peer-xxxxxxxxx`)
+   - Coordinators register with type 'coordinator' (format: `coordinator-xxxxxxxxx`)
+   - Server maintains state for each node (idle/busy, tasks completed)
+
+2. **Node Discovery**:
+   - Coordinator requests list of available nodes from signaling server
+   - Server filters and returns only nodes with type 'node' and their current status
+   - Coordinator selects a node based on load balancing strategy (random, least-loaded, round-robin)
+
+3. **WebRTC Signaling**:
+   - Coordinator initiates P2P connection with selected node
+   - Signaling server relays WebRTC signals between coordinator and node
+
+4. **P2P Task Execution**:
+   - Once P2P connection is established, coordinator sends task message with JavaScript code
+   - Node updates status to 'busy' and reports to signaling server
+
+5. **Worker Isolation**:
+   - Node forwards code to Web Worker for isolated execution
+   - Worker executes code using `new Function()` sandboxing
+
+6. **Result Return**:
+   - Worker sends result back to node's main thread
+   - Node sends result to coordinator via P2P connection
+   - Node updates status to 'idle' and increments task counter
 
 ### Message Protocol
 
 The system uses JSON messages over WebSocket (signaling) and WebRTC data channels (P2P):
 
 **Signaling Server Messages:**
-- `register`: Client registers with a peer ID
+- `register`: Client registers with a peer ID and type ('node' or 'coordinator')
 - `signal`: WebRTC signal exchange (ICE candidates, SDP)
+- `status_update`: Nodes report their status ('idle' or 'busy')
+- `list_nodes`: Coordinators request list of available nodes
 - `registered`: Server confirms registration
+- `nodes_list`: Server sends list of nodes with their status and task counts
 - `error`: Server reports errors
 
 **P2P Messages:**
@@ -98,10 +140,12 @@ The system uses JSON messages over WebSocket (signaling) and WebRTC data channel
 
 ### Key Files
 
-- [signaling-server/src/server.ts](signaling-server/src/server.ts): WebSocket server implementing peer registry and signal relay
-- [peer-node/src/peer-node.ts](peer-node/src/peer-node.ts): Main P2P node logic - handles signaling, WebRTC connections, and task coordination
+- [signaling-server/src/server.ts](signaling-server/src/server.ts): WebSocket server implementing peer registry with node status tracking, signal relay, and node discovery
+- [peer-node/src/peer-node.ts](peer-node/src/peer-node.ts): Main P2P node logic - handles signaling, WebRTC connections, task coordination, and status reporting
 - [peer-node/src/worker-sandbox.ts](peer-node/src/worker-sandbox.ts): Web Worker that executes user code in isolation
 - [peer-node/www/index.html](peer-node/www/index.html): UI for the peer node application
+- [task-coordinator/src/coordinator.ts](task-coordinator/src/coordinator.ts): Coordinator logic - node discovery, load balancing, P2P connection management, and task submission
+- [task-coordinator/www/index.html](task-coordinator/www/index.html): UI for submitting tasks with different load balancing strategies
 
 ### Dependencies
 
@@ -127,28 +171,56 @@ This is a hackathon prototype with **basic sandboxing only**. The worker-sandbox
 - Implement end-to-end encryption
 - Add rate limiting and code validation
 
+### Load Balancing Strategies
+
+The task coordinator implements three load balancing strategies:
+
+1. **Random**: Randomly selects an idle node from the available pool
+2. **Least Loaded**: Selects the node with the fewest completed tasks
+3. **Round Robin**: Simple rotation through available idle nodes
+
+Strategies are implemented in [coordinator.ts:188-207](task-coordinator/src/coordinator.ts#L188-L207).
+
 ### Current Limitations
 
-- The target peer ID in [peer-node.ts:178](peer-node/src/peer-node.ts#L178) is hardcoded as `'otro-peer-id'` - this should come from the UI or a peer discovery mechanism
-- No task client implementation exists yet to submit work to the network
-- No load balancing or task distribution system
+- Coordinators maintain a single P2P connection - if the connected node goes offline, must reconnect
+- No task queue system - tasks are submitted one at a time
 - No persistence of results
-- No metrics or monitoring
+- Node capabilities (CPU, RAM) are not considered in load balancing
+- No timeout enforcement at the worker level (only at coordinator level)
 
 ### Testing Strategy
 
 Currently no automated tests exist. When testing manually:
 
-1. Start signaling server first
-2. Open multiple peer-node instances in different browser tabs/devices
-3. Manually modify the target peer ID to connect specific peers
-4. Test task execution by sending messages via browser console
+1. Start signaling server: `cd signaling-server && npm run dev`
+2. Start one or more peer nodes: `cd peer-node && npm run watch` then open `www/index.html`
+3. Start coordinator: `cd task-coordinator && npm run watch` then open `www/index.html`
+4. In the coordinator UI:
+   - Verify nodes are listed in the status bar
+   - Select a load balancing strategy
+   - Enter JavaScript code (e.g., `function() { return 2 + 2; }`)
+   - Click "Ejecutar Tarea"
+   - Check result appears in the Result section
+5. Monitor logs in all three components to see the full flow
 
-Example task submission (from browser console with an established P2P connection):
+Example tasks to test:
 ```javascript
-peer.send(JSON.stringify({
-  type: 'task',
-  taskId: 'test-123',
-  code: 'function() { return 2 + 2; }'
-}));
+// Simple calculation
+function() { return 2 + 2; }
+
+// Loop calculation
+function() {
+  let sum = 0;
+  for (let i = 0; i < 1000; i++) {
+    sum += i;
+  }
+  return sum;
+}
+
+// Array operations
+function() {
+  const data = [1, 2, 3, 4, 5];
+  return data.reduce((acc, val) => acc + val, 0);
+}
 ```
