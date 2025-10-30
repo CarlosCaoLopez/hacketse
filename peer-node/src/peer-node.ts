@@ -86,6 +86,7 @@ interface WorkerResponse {
 let peerId: string = generatePeerId();
 let ws: WebSocket | null = null;
 let peer: SimplePeerInstance | null = null;
+let remotePeerId: string | null = null; // Guardar el ID del peer remoto
 let worker: Worker | null = null;
 let taskCount: number = 0;
 
@@ -111,8 +112,15 @@ function log(message: string): void {
 
 // Actualizar UI
 function updateStatus(connected: boolean): void {
-  statusEl.textContent = connected ? 'Conectado' : 'Desconectado';
-  statusEl.className = connected ? 'connected' : 'disconnected';
+  console.log('updateStatus llamado con:', connected);
+  console.log('statusEl:', statusEl);
+  if (statusEl) {
+    statusEl.textContent = connected ? 'Conectado' : 'Desconectado';
+    statusEl.className = connected ? 'connected' : 'disconnected';
+    console.log('Estado actualizado en DOM');
+  } else {
+    console.error('statusEl no encontrado!');
+  }
 }
 
 // Inicializar Web Worker
@@ -173,11 +181,20 @@ function connectToSignaling(): void {
       case 'registered':
         log(`Registrado con ID: ${peerId}`);
         peerIdEl.textContent = peerId;
-        initPeer(false); // Inicializar como receptor
+        updateStatus(true); // Actualizar estado a conectado
         break;
 
       case 'signal':
         log(`Señal recibida de ${message.from}`);
+        // Guardar el ID del remitente primero (importante!)
+        if (!remotePeerId) {
+          remotePeerId = message.from;
+        }
+        // Si no hay peer activo, crear uno nuevo como receptor
+        if (!peer) {
+          initPeer(false); // Inicializar como receptor
+        }
+        // Procesar la señal
         if (peer) {
           peer.signal(message.signal);
         }
@@ -207,14 +224,20 @@ function initPeer(initiator: boolean): void {
   }) as SimplePeerInstance;
 
   newPeer.on('signal', (signal: SimplePeerSignalData) => {
-    // Enviar señal al servidor para reenvío
+    // Enviar señal al servidor para reenvío al peer remoto
+    log(`Generando señal. remotePeerId: ${remotePeerId}, ws: ${ws ? 'conectado' : 'null'}`);
     if (ws && ws.readyState === WebSocket.OPEN) {
-      const signalMsg: SignalMessage = {
-        type: 'signal',
-        target: 'otro-peer-id', // En producción, esto vendría de la UI
-        signal: signal
-      };
-      ws.send(JSON.stringify(signalMsg));
+      if (remotePeerId) {
+        const signalMsg: SignalMessage = {
+          type: 'signal',
+          target: remotePeerId,
+          signal: signal
+        };
+        ws.send(JSON.stringify(signalMsg));
+        log(`✓ Señal enviada a ${remotePeerId}`);
+      } else {
+        log('✗ ERROR: remotePeerId es null, no se puede enviar señal');
+      }
     }
   });
 
@@ -233,7 +256,8 @@ function initPeer(initiator: boolean): void {
 
   newPeer.on('close', () => {
     log('Conexión P2P cerrada');
-    updateStatus(false);
+    peer = null;
+    remotePeerId = null;
   });
 
   peer = newPeer;
