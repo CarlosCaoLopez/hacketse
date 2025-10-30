@@ -1,6 +1,9 @@
 // Declarar SimplePeer como variable global (cargada desde CDN)
 declare const SimplePeer: any;
 
+// Importar configuración
+import { getSignalingServer, saveSignalingServer, validateServerUrl, isMobile } from './config';
+
 // Tipos para SimplePeer
 interface SimplePeerSignalData {
   type?: string;
@@ -16,8 +19,8 @@ interface SimplePeerInstance {
   on(event: string, callback: (...args: any[]) => void): void;
 }
 
-// Configuración
-const SIGNALING_SERVER = 'ws://localhost:3000';
+// Configuración dinámica del servidor
+let SIGNALING_SERVER = getSignalingServer();
 
 // Tipos de mensajes
 interface RegisterMessage {
@@ -95,6 +98,9 @@ const statusEl = document.getElementById('status') as HTMLSpanElement;
 const peerIdEl = document.getElementById('peerId') as HTMLSpanElement;
 const taskCountEl = document.getElementById('taskCount') as HTMLSpanElement;
 const logEl = document.getElementById('log') as HTMLDivElement;
+const configPanelEl = document.getElementById('configPanel') as HTMLDivElement;
+const serverInputEl = document.getElementById('serverInput') as HTMLInputElement;
+const connectBtnEl = document.getElementById('connectBtn') as HTMLButtonElement;
 
 // Generar ID único para el peer
 function generatePeerId(): string {
@@ -293,11 +299,58 @@ function handleIncomingData(data: Uint8Array): void {
   }
 }
 
+// Configurar panel de servidor (solo en móvil)
+function setupConfigPanel(): void {
+  if (isMobile()) {
+    // Mostrar panel de configuración en móvil
+    configPanelEl.style.display = 'block';
+
+    // Cargar servidor guardado si existe
+    const savedServer = localStorage.getItem('signaling_server');
+    if (savedServer) {
+      serverInputEl.value = savedServer;
+    } else {
+      serverInputEl.value = getSignalingServer();
+    }
+
+    // Manejar clic en botón conectar
+    connectBtnEl.addEventListener('click', () => {
+      const serverUrl = serverInputEl.value.trim();
+
+      if (!validateServerUrl(serverUrl)) {
+        log('❌ URL inválida. Debe empezar con ws:// o wss://');
+        alert('URL inválida. Formato correcto: ws://IP:PUERTO\nEjemplo: ws://192.168.1.100:3000');
+        return;
+      }
+
+      // Guardar configuración
+      saveSignalingServer(serverUrl);
+      SIGNALING_SERVER = serverUrl;
+
+      log(`✓ Servidor configurado: ${serverUrl}`);
+
+      // Deshabilitar botón y conectar
+      connectBtnEl.disabled = true;
+      serverInputEl.disabled = true;
+
+      // Iniciar conexión
+      initWorker();
+      connectToSignaling();
+    });
+
+    log('📱 Modo móvil detectado. Configura el servidor de señalización.');
+  } else {
+    // En navegador, conectar automáticamente
+    log('🖥️  Modo navegador detectado. Conectando a localhost...');
+    initWorker();
+    connectToSignaling();
+  }
+}
+
 // Inicializar aplicación
 function init(): void {
   log('Iniciando nodo P2P...');
-  initWorker();
-  connectToSignaling();
+  setupConfigPanel();
 }
 
 // Iniciar cuando el DOM esté listo

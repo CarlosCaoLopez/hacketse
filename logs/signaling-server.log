@@ -1,0 +1,5 @@
+
+> signaling-server@1.0.0 dev
+> ts-node src/server.ts
+
+Servidor de señalización escuchando en puerto 3000

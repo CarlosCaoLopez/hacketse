@@ -12,6 +12,7 @@
     "open:ios": "cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "^5.7.8",
     "@capacitor/core": "^5.5.1",
     "simple-peer": "^9.11.1"
   },

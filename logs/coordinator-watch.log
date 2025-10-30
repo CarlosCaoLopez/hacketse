@@ -1,0 +1,8 @@
+
+> task-coordinator@1.0.0 watch
+> tsc --watch
+
+[2J[3J[H14:58:11 - Starting compilation in watch mode...
+
+
+14:58:12 - Found 0 errors. Watching for file changes.

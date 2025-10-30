@@ -1,6 +1,9 @@
 // Declarar SimplePeer como variable global (cargada desde CDN)
 declare const SimplePeer: any;
 
+// Importar configuración
+import { getSignalingServer } from './config';
+
 // Tipos para SimplePeer
 interface SimplePeerSignalData {
   type?: string;
@@ -16,8 +19,8 @@ interface SimplePeerInstance {
   on(event: string, callback: (...args: any[]) => void): void;
 }
 
-// Configuración
-const SIGNALING_SERVER = 'ws://localhost:3000';
+// Configuración dinámica del servidor
+const SIGNALING_SERVER = getSignalingServer();
 
 // Tipos de mensajes del servidor de señalización
 interface RegisterMessage {

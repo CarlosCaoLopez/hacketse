@@ -1,0 +1,8 @@
+
+> peer-node@1.0.0 watch
+> tsc --watch
+
+[2J[3J[H14:58:10 - Starting compilation in watch mode...
+
+
+14:58:11 - Found 0 errors. Watching for file changes.
