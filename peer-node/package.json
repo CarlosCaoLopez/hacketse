@@ -4,6 +4,8 @@
   "description": "Nodo P2P para cómputo distribuido",
   "main": "index.html",
   "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
     "init": "cap init",
     "sync": "cap sync",
     "open:android": "cap open android",
@@ -14,6 +16,8 @@
     "simple-peer": "^9.11.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^5.5.1"
+    "@capacitor/cli": "^5.5.1",
+    "@types/simple-peer": "^9.11.8",
+    "typescript": "^5.3.3"
   }
 }

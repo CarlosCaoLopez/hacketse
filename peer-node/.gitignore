@@ -3,4 +3,4 @@ npm-debug.log
 .env
 android/
 ios/
-dist/
+www/dist/

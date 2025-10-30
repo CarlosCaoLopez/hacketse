@@ -1,6 +1,20 @@
 // Web Worker para ejecutar código JavaScript de forma aislada
 
-self.onmessage = function(e) {
+interface WorkerRequest {
+  taskId: string;
+  code: string;
+}
+
+interface WorkerResponse {
+  taskId: string;
+  result: any;
+  error: {
+    message: string;
+    stack?: string;
+  } | null;
+}
+
+self.onmessage = function(e: MessageEvent<WorkerRequest>): void {
   const { taskId, code } = e.data;
 
   try {
@@ -10,7 +24,7 @@ self.onmessage = function(e) {
     const userFunction = new Function('return ' + code)();
 
     // Ejecutar la función de usuario
-    let result;
+    let result: any;
     if (typeof userFunction === 'function') {
       result = userFunction();
     } else {
@@ -18,21 +32,23 @@ self.onmessage = function(e) {
     }
 
     // Enviar resultado exitoso al hilo principal
-    self.postMessage({
+    const response: WorkerResponse = {
       taskId: taskId,
       result: result,
       error: null
-    });
+    };
+    self.postMessage(response);
 
   } catch (error) {
     // Capturar y enviar errores al hilo principal
-    self.postMessage({
+    const response: WorkerResponse = {
       taskId: taskId,
       result: null,
       error: {
-        message: error.message,
-        stack: error.stack
+        message: (error as Error).message,
+        stack: (error as Error).stack
       }
-    });
+    };
+    self.postMessage(response);
   }
 };

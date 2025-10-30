@@ -27,13 +27,19 @@ Proyecto de hackathon que convierte teléfonos viejos en nodos de una red P2P pa
 
 ### 1. Servidor de Señalización (`signaling-server/`)
 
-Servidor WebSocket que facilita el descubrimiento de peers y el intercambio de señales WebRTC.
+Servidor WebSocket TypeScript que facilita el descubrimiento de peers y el intercambio de señales WebRTC.
 
 **Instalar y ejecutar:**
 ```bash
 cd signaling-server
 npm install
-npm start
+npm run build    # Compilar TypeScript
+npm start        # Ejecutar servidor
+```
+
+**Desarrollo con auto-reload:**
+```bash
+npm run dev      # Ejecutar con ts-node
 ```
 
 El servidor escuchará en `http://localhost:3000`
@@ -45,7 +51,7 @@ El servidor escuchará en `http://localhost:3000`
 
 ### 2. Nodo P2P (`peer-node/`)
 
-Aplicación Capacitor que funciona como nodo de la red P2P.
+Aplicación Capacitor TypeScript que funciona como nodo de la red P2P.
 
 **Instalar dependencias:**
 ```bash
@@ -53,10 +59,17 @@ cd peer-node
 npm install
 ```
 
+**Compilar TypeScript:**
+```bash
+npm run build     # Compilar una vez
+npm run watch     # Compilar en modo watch (auto-recompilación)
+```
+
 **Ejecutar en navegador (desarrollo):**
 ```bash
-# Simplemente abre el archivo www/index.html en tu navegador
-# Asegúrate de que el servidor de señalización esté corriendo
+# 1. Compilar TypeScript (ver arriba)
+# 2. Abrir www/index.html en tu navegador
+# 3. Asegúrate de que el servidor de señalización esté corriendo
 ```
 
 **Compilar para móvil:**
@@ -81,9 +94,9 @@ npx cap open android
 - Ejecución segura en Web Worker
 - Envío de resultados de vuelta al solicitante
 
-### 3. Web Worker Sandbox (`peer-node/www/worker-sandbox.js`)
+### 3. Web Worker Sandbox (`peer-node/src/worker-sandbox.ts`)
 
-Ejecuta código JavaScript de usuarios de forma aislada.
+Ejecuta código JavaScript de usuarios de forma aislada (compilado a `www/dist/worker-sandbox.js`).
 
 **Características:**
 - Ejecución en hilo separado
@@ -137,7 +150,8 @@ peer.send(JSON.stringify({
 
 ## Stack Tecnológico
 
-- **Frontend:** HTML/CSS/JavaScript
+- **Lenguaje:** TypeScript
+- **Frontend:** HTML/CSS
 - **P2P:** Simple-Peer (WebRTC)
 - **Señalización:** Node.js + Express + ws (WebSocket)
 - **Móvil:** Capacitor
