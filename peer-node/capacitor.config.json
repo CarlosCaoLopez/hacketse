@@ -1,0 +1,6 @@
+{
+  "appId": "com.hacketse.peernode",
+  "appName": "P2P Node",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}

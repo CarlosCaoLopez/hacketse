@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P2P Node</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #4CAF50;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      background: #333;
+    }
+    .connected {
+      color: #4CAF50;
+    }
+    .disconnected {
+      color: #f44336;
+    }
+    #log {
+      background: #000;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+      border: 1px solid #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>P2P Compute Node</h1>
+    <div class="status">
+      <strong>Estado:</strong> <span id="status" class="disconnected">Desconectado</span>
+    </div>
+    <div class="status">
+      <strong>Peer ID:</strong> <span id="peerId">-</span>
+    </div>
+    <div class="status">
+      <strong>Tareas ejecutadas:</strong> <span id="taskCount">0</span>
+    </div>
+    <h3>Log de actividad:</h3>
+    <div id="log"></div>
+  </div>
+
+  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
+  <script src="peer-node.js"></script>
+</body>
+</html>
