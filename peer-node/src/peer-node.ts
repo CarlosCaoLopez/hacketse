@@ -1,4 +1,20 @@
-import SimplePeer from 'simple-peer';
+// Declarar SimplePeer como variable global (cargada desde CDN)
+declare const SimplePeer: any;
+
+// Tipos para SimplePeer
+interface SimplePeerSignalData {
+  type?: string;
+  sdp?: string;
+  candidate?: any;
+}
+
+interface SimplePeerInstance {
+  signal(data: SimplePeerSignalData): void;
+  send(data: string | ArrayBuffer | Uint8Array): void;
+  destroy(): void;
+  connected: boolean;
+  on(event: string, callback: (...args: any[]) => void): void;
+}
 
 // Configuración
 const SIGNALING_SERVER = 'ws://localhost:3000';
@@ -13,7 +29,7 @@ interface RegisterMessage {
 interface SignalMessage {
   type: 'signal';
   target: string;
-  signal: SimplePeer.SignalData;
+  signal: SimplePeerSignalData;
 }
 
 interface RegisteredResponse {
@@ -24,7 +40,7 @@ interface RegisteredResponse {
 interface SignalResponse {
   type: 'signal';
   from: string;
-  signal: SimplePeer.SignalData;
+  signal: SimplePeerSignalData;
 }
 
 interface ErrorResponse {
@@ -60,13 +76,16 @@ interface WorkerRequest {
 interface WorkerResponse {
   taskId: string;
   result: any;
-  error: any;
+  error: {
+    message: string;
+    stack?: string;
+  } | null;
 }
 
 // Estado del nodo
 let peerId: string = generatePeerId();
 let ws: WebSocket | null = null;
-let peer: SimplePeer.Instance | null = null;
+let peer: SimplePeerInstance | null = null;
 let worker: Worker | null = null;
 let taskCount: number = 0;
 
@@ -182,12 +201,12 @@ function connectToSignaling(): void {
 
 // Inicializar conexión P2P con Simple-Peer
 function initPeer(initiator: boolean): void {
-  peer = new SimplePeer({
+  const newPeer = new SimplePeer({
     initiator: initiator,
     trickle: true
-  });
+  }) as SimplePeerInstance;
 
-  peer.on('signal', (signal: SimplePeer.SignalData) => {
+  newPeer.on('signal', (signal: SimplePeerSignalData) => {
     // Enviar señal al servidor para reenvío
     if (ws && ws.readyState === WebSocket.OPEN) {
       const signalMsg: SignalMessage = {
@@ -199,23 +218,25 @@ function initPeer(initiator: boolean): void {
     }
   });
 
-  peer.on('connect', () => {
+  newPeer.on('connect', () => {
     log('Conexión P2P establecida');
     updateStatus(true);
   });
 
-  peer.on('data', (data: Uint8Array) => {
+  newPeer.on('data', (data: Uint8Array) => {
     handleIncomingData(data);
   });
 
-  peer.on('error', (err: Error) => {
+  newPeer.on('error', (err: Error) => {
     log('Error P2P: ' + err.message);
   });
 
-  peer.on('close', () => {
+  newPeer.on('close', () => {
     log('Conexión P2P cerrada');
     updateStatus(false);
   });
+
+  peer = newPeer;
 }
 
 // Manejar datos recibidos de otros peers

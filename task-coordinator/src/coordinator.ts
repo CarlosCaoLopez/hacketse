@@ -1,4 +1,20 @@
-import SimplePeer from 'simple-peer';
+// Declarar SimplePeer como variable global (cargada desde CDN)
+declare const SimplePeer: any;
+
+// Tipos para SimplePeer
+interface SimplePeerSignalData {
+  type?: string;
+  sdp?: string;
+  candidate?: any;
+}
+
+interface SimplePeerInstance {
+  signal(data: SimplePeerSignalData): void;
+  send(data: string | ArrayBuffer | Uint8Array): void;
+  destroy(): void;
+  connected: boolean;
+  on(event: string, callback: (...args: any[]) => void): void;
+}
 
 // Configuración
 const SIGNALING_SERVER = 'ws://localhost:3000';
@@ -13,7 +29,7 @@ interface RegisterMessage {
 interface SignalMessage {
   type: 'signal';
   target: string;
-  signal: SimplePeer.SignalData;
+  signal: SimplePeerSignalData;
 }
 
 interface ListNodesMessage {
@@ -28,7 +44,7 @@ interface RegisteredResponse {
 interface SignalResponse {
   type: 'signal';
   from: string;
-  signal: SimplePeer.SignalData;
+  signal: SimplePeerSignalData;
 }
 
 interface NodeInfo {
@@ -67,7 +83,7 @@ interface ResultMessage {
 let peerId: string = generatePeerId();
 let ws: WebSocket | null = null;
 let availableNodes: NodeInfo[] = [];
-let activePeer: SimplePeer.Instance | null = null;
+let activePeer: SimplePeerInstance | null = null;
 let pendingTasks: Map<string, (result: any, error: any) => void> = new Map();
 
 // Referencias DOM
@@ -216,12 +232,12 @@ function connectToPeer(targetPeerId: string): Promise<void> {
   return new Promise((resolve, reject) => {
     log(`Estableciendo conexión P2P con ${targetPeerId}...`);
 
-    activePeer = new SimplePeer({
+    const newPeer = new SimplePeer({
       initiator: true,
       trickle: true
-    });
+    }) as SimplePeerInstance;
 
-    activePeer.on('signal', (signal: SimplePeer.SignalData) => {
+    newPeer.on('signal', (signal: SimplePeerSignalData) => {
       // Enviar señal al servidor para reenvío al nodo
       if (ws && ws.readyState === WebSocket.OPEN) {
         const signalMsg: SignalMessage = {
@@ -233,24 +249,26 @@ function connectToPeer(targetPeerId: string): Promise<void> {
       }
     });
 
-    activePeer.on('connect', () => {
+    newPeer.on('connect', () => {
       log(`✓ Conexión P2P establecida con ${targetPeerId}`);
       resolve();
     });
 
-    activePeer.on('data', (data: Uint8Array) => {
+    newPeer.on('data', (data: Uint8Array) => {
       handleIncomingData(data);
     });
 
-    activePeer.on('error', (err: Error) => {
+    newPeer.on('error', (err: Error) => {
       log(`Error P2P: ${err.message}`);
       reject(err);
     });
 
-    activePeer.on('close', () => {
+    newPeer.on('close', () => {
       log('Conexión P2P cerrada');
       activePeer = null;
     });
+
+    activePeer = newPeer;
 
     // Timeout de 10 segundos
     setTimeout(() => {
