@@ -14,21 +14,13 @@ export function isMobile(): boolean {
 
 /**
  * Obtiene la URL del servidor de señalización según el entorno
- * - En móvil: lee de localStorage o usa un valor por defecto configurable
+ * - En móvil: IP hardcodeada del ordenador Windows
  * - En navegador: usa localhost para desarrollo
  */
 export function getSignalingServer(): string {
   if (isMobile()) {
-    // En móvil, intentar leer configuración guardada
-    const savedServer = localStorage.getItem('signaling_server');
-    if (savedServer) {
-      return savedServer;
-    }
-
-    // Valor por defecto para móvil (usa tu IP local)
-    // Para encontrar tu IP: en Linux usa 'ip addr show' o 'hostname -I'
-    // Actualmente detectada: 172.18.41.236
-    return 'ws://172.18.41.236:3000';
+    // En móvil, usar IP hardcodeada del ordenador Windows
+    return 'ws://172.18.37.128:3000';
   } else {
     // En navegador de escritorio, usar localhost
     return 'ws://localhost:3000';

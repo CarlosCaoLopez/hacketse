@@ -2,7 +2,7 @@
 declare const SimplePeer: any;
 
 // Importar configuración
-import { getSignalingServer, saveSignalingServer, validateServerUrl, isMobile } from './config';
+import { getSignalingServer, saveSignalingServer, validateServerUrl, isMobile } from './config.js';
 
 // Tipos para SimplePeer
 interface SimplePeerSignalData {
