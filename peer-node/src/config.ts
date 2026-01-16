@@ -20,7 +20,8 @@ export function isMobile(): boolean {
 export function getSignalingServer(): string {
   if (isMobile()) {
     // En móvil, usar IP hardcodeada del ordenador Windows
-    return 'ws://172.18.37.128:3000';
+    // return 'ws://172.18.37.128:3000';  // IP anterior
+    return 'ws://192.168.1.129:3000';     // IP actual (Wi-Fi)
   } else {
     // En navegador de escritorio, usar localhost
     return 'ws://localhost:3000';

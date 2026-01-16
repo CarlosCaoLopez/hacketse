@@ -1,234 +1,280 @@
-# HackETSE - Red P2P de Cómputo Distribuido
+# PWS (Peer Web Services): P2P Distributed Computing Network
 
-Proyecto de hackathon que convierte teléfonos viejos en nodos de una red P2P para cómputo distribuido.
+---
 
-## Arquitectura
+**PWS (Peer Web Services)** is an innovative distributed computing platform that transforms old smartphones and unused devices into powerful compute nodes within a peer-to-peer network. Built for the HackETSE hackathon, this project demonstrates how to leverage WebRTC technology to create a decentralized task execution system without requiring traditional server infrastructure for compute operations.
+
+## Tech Stack
+
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![WebRTC](https://img.shields.io/badge/WebRTC-333333?style=for-the-badge&logo=webrtc&logoColor=white)
+![WebSocket](https://img.shields.io/badge/WebSocket-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
+![Capacitor](https://img.shields.io/badge/Capacitor-119EFF?style=for-the-badge&logo=capacitor&logoColor=white)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![Web Workers](https://img.shields.io/badge/Web_Workers-FF6F00?style=for-the-badge&logo=javascript&logoColor=white)
+
+## What is PWS?
+
+PWS enables **distributed code execution** by connecting idle devices (especially old phones) as compute nodes that can execute JavaScript tasks submitted by coordinators. The system features:
+
+- **Direct P2P Communication**: Uses WebRTC data channels for direct peer-to-peer connections, eliminating the need for central compute servers
+- **Smart Load Balancing**: Automatically distributes tasks across available nodes using strategies like Random, Least Loaded, and Round Robin
+- **Real-time Node Discovery**: WebSocket signaling server maintains a live registry of available nodes with their current status (idle/busy)
+- **Isolated Code Execution**: Tasks run in Web Workers for basic sandboxing and security
+- **Mobile-First Design**: Built with Capacitor to deploy compute nodes on Android/iOS devices
+- **Zero Infrastructure**: Only requires a lightweight signaling server for peer discovery and WebRTC setup
+
+## Why PWS?
+
+Traditional distributed computing requires dedicated servers and complex infrastructure. PWS democratizes distributed computing by:
+
+1. **Repurposing Old Devices**: Give new life to old smartphones as compute nodes
+2. **Reducing E-Waste**: Extend device lifecycle by converting them into useful computing resources
+3. **Cost-Effective**: No need for expensive server infrastructure - use what you already have
+4. **Educational**: Learn WebRTC, P2P networking, load balancing, and distributed systems
+5. **Scalable**: Add more nodes simply by connecting more devices
+6. **Decentralized**: No single point of failure for task execution (signaling server only handles discovery)
+
+## How It Works
+
+The system consists of three TypeScript-based components that work together to create a complete distributed computing network:
+
+1. **Signaling Server**: Lightweight WebSocket server that manages node registry, facilitates peer discovery, and relays WebRTC signaling messages
+2. **Peer Nodes**: Mobile/web applications (via Capacitor) that register as compute nodes, receive tasks, execute code in isolated Web Workers, and return results
+3. **Task Coordinator**: Web interface where users submit JavaScript code, select load balancing strategies, and receive execution results in real-time
+
+## Architecture
 
 ```
 ┌──────────────┐
-│   Usuario    │
+│     User     │
 └──────┬───────┘
        │
 ┌──────▼────────────────┐
-│  Task Coordinator     │ ← Cliente web que envía tareas
+│  Task Coordinator     │ ← Web client that sends tasks
 │  (Load Balancing)     │
 └──────┬────────────────┘
        │ WebSocket
 ┌──────▼────────────────┐
-│  Signaling Server     │ ← Registro de nodos + señalización WebRTC
+│  Signaling Server     │ ← Node registry + WebRTC signaling
 │  (Node Registry)      │
 └──────┬────────────────┘
        │ WebSocket
    ┌───┴───┐
    │       │
 ┌──▼──┐ ┌──▼──┐
-│Node1│ │Node2│ ← Nodos P2P (teléfonos viejos)
+│Node1│ │Node2│ ← P2P Nodes (old phones)
 └──┬──┘ └──┬──┘
    │       │
-   │ WebRTC│ (conexión directa)
+   │ WebRTC│ (direct connection)
    └───┬───┘
        │
    ┌───▼────────┐
-   │Web Worker  │ ← Ejecución segura de código
+   │Web Worker  │ ← Secure code execution
    └────────────┘
 ```
 
-## Componentes
+## Components
 
-### 1. Servidor de Señalización (`signaling-server/`)
+### 1. Signaling Server (`signaling-server/`)
 
-Servidor WebSocket TypeScript que facilita el descubrimiento de peers y el intercambio de señales WebRTC.
+TypeScript WebSocket server that facilitates peer discovery and WebRTC signal exchange.
 
-**Instalar y ejecutar:**
+**Install and run:**
 ```bash
 cd signaling-server
 npm install
-npm run build    # Compilar TypeScript
-npm start        # Ejecutar servidor
+npm run build    # Compile TypeScript
+npm start        # Run server
 ```
 
-**Desarrollo con auto-reload:**
+**Development with auto-reload:**
 ```bash
-npm run dev      # Ejecutar con ts-node
+npm run dev      # Run with ts-node
 ```
 
-El servidor escuchará en `http://localhost:3000`
+The server will listen on `http://localhost:3000`
 
-**Funcionalidad:**
-- Registro de peers con ID único (nodos y coordinadores)
-- Mantiene estado de cada nodo (idle/busy, tareas completadas)
-- Proporciona lista de nodos disponibles a coordinadores
-- Reenvío de señales WebRTC entre peers
-- Gestión de conexiones/desconexiones
+**Functionality:**
+- Peer registration with unique ID (nodes and coordinators)
+- Maintains state of each node (idle/busy, completed tasks)
+- Provides list of available nodes to coordinators
+- WebRTC signal relay between peers
+- Connection/disconnection management
 
-### 2. Nodo P2P (`peer-node/`)
+### 2. P2P Node (`peer-node/`)
 
-Aplicación Capacitor TypeScript que funciona como nodo de la red P2P.
+Capacitor TypeScript application that functions as a P2P network node.
 
-**Instalar dependencias:**
+**Install dependencies:**
 ```bash
 cd peer-node
 npm install
 ```
 
-**Compilar TypeScript:**
+**Compile TypeScript:**
 ```bash
-npm run build     # Compilar una vez
-npm run watch     # Compilar en modo watch (auto-recompilación)
+npm run build     # Compile once
+npm run watch     # Compile in watch mode (auto-recompilation)
 ```
 
-**Ejecutar en navegador (desarrollo):**
+**Run in browser (development):**
 ```bash
-# 1. Compilar TypeScript (ver arriba)
-# 2. Abrir www/index.html en tu navegador
-# 3. Asegúrate de que el servidor de señalización esté corriendo
+# 1. Compile TypeScript (see above)
+# 2. Open www/index.html in your browser
+# 3. Make sure the signaling server is running
 ```
 
-**Compilar para móvil:**
+**Compile for mobile:**
 ```bash
-# Inicializar Capacitor (solo primera vez)
+# Initialize Capacitor (first time only)
 npx cap init
 
-# Añadir plataforma Android
+# Add Android platform
 npx cap add android
 
-# Sincronizar código
+# Sync code
 npx cap sync
 
-# Abrir en Android Studio
+# Open in Android Studio
 npx cap open android
 ```
 
-**Funcionalidad:**
-- Conexión al servidor de señalización (se registra como 'node')
-- Reporte de estado (idle/busy) al servidor
-- Establecimiento de conexiones P2P con Simple-Peer
-- Recepción de tareas (código JavaScript)
-- Ejecución segura en Web Worker
-- Envío de resultados de vuelta al solicitante
+**Functionality:**
+- Connection to signaling server (registers as 'node')
+- Status reporting (idle/busy) to server
+- P2P connection establishment with Simple-Peer
+- Task reception (JavaScript code)
+- Secure execution in Web Worker
+- Sending results back to requester
 
-### 3. Coordinador de Tareas (`task-coordinator/`)
+### 3. Task Coordinator (`task-coordinator/`)
 
-Aplicación web que permite enviar tareas a la red distribuida con selección automática de nodos.
+Web application that allows sending tasks to the distributed network with automatic node selection.
 
-**Instalar dependencias:**
+**Install dependencies:**
 ```bash
 cd task-coordinator
 npm install
 ```
 
-**Compilar TypeScript:**
+**Compile TypeScript:**
 ```bash
-npm run build     # Compilar una vez
-npm run watch     # Compilar en modo watch (auto-recompilación)
+npm run build     # Compile once
+npm run watch     # Compile in watch mode (auto-recompilation)
 ```
 
-**Ejecutar:**
+**Run:**
 ```bash
-# 1. Compilar TypeScript (ver arriba)
-# 2. Abrir www/index.html en tu navegador
-# 3. Asegúrate de que el servidor de señalización esté corriendo
-# 4. Asegúrate de tener al menos un nodo conectado
+# 1. Compile TypeScript (see above)
+# 2. Open www/index.html in your browser
+# 3. Make sure the signaling server is running
+# 4. Make sure you have at least one node connected
 ```
 
-**Funcionalidad:**
-- Interfaz web para enviar código JavaScript
-- Se registra como 'coordinator' en el servidor
-- Consulta lista de nodos disponibles
-- Selección automática de nodo según estrategia:
-  - **Random**: Selección aleatoria entre nodos libres
-  - **Least Loaded**: Nodo con menos tareas completadas
-  - **Round Robin**: Rotación entre nodos
-- Establece conexión P2P con el nodo seleccionado
-- Envía tarea y espera resultado
-- Muestra resultado en tiempo real
+**Functionality:**
+- Web interface to send JavaScript code
+- Registers as 'coordinator' on the server
+- Queries list of available nodes
+- Automatic node selection based on strategy:
+  - **Random**: Random selection among idle nodes
+  - **Least Loaded**: Node with fewest completed tasks
+  - **Round Robin**: Rotation among nodes
+- Establishes P2P connection with selected node
+- Sends task and waits for result
+- Shows result in real-time
 
 ### 4. Web Worker Sandbox (`peer-node/src/worker-sandbox.ts`)
 
-Ejecuta código JavaScript de usuarios de forma aislada (compilado a `www/dist/worker-sandbox.js`).
+Executes user JavaScript code in isolation (compiled to `www/dist/worker-sandbox.js`).
 
-**Características:**
-- Ejecución en hilo separado
-- Uso de `new Function()` para sandboxing básico
-- Captura de errores
-- Comunicación asíncrona con el hilo principal
+**Features:**
+- Execution in separate thread
+- Use of `new Function()` for basic sandboxing
+- Error capture
+- Asynchronous communication with main thread
 
-**⚠️ IMPORTANTE:** El sandboxing actual es básico. Para producción considera:
-- Usar [isolated-vm](https://github.com/laverdet/isolated-vm)
-- Implementar límites de tiempo de ejecución
-- Restricciones de memoria
-- Whitelist de APIs permitidas
+**⚠️ IMPORTANT:** Current sandboxing is basic. For production consider:
+- Using [isolated-vm](https://github.com/laverdet/isolated-vm)
+- Implementing execution time limits
+- Memory restrictions
+- Whitelist of allowed APIs
 
-## Flujo de Trabajo Completo
+## Complete Workflow
 
-1. **Inicio del sistema:**
-   - Servidor de señalización se ejecuta en `localhost:3000`
-   - Nodos P2P se conectan y registran como tipo 'node'
-   - Coordinador se conecta y registra como tipo 'coordinator'
+1. **System startup:**
+   - Signaling server runs on `localhost:3000`
+   - P2P nodes connect and register as type 'node'
+   - Coordinator connects and registers as type 'coordinator'
 
-2. **Envío de tarea:**
-   - Usuario escribe código en el coordinador
-   - Coordinador solicita lista de nodos al servidor
-   - Coordinador selecciona nodo según estrategia (random, least-loaded, etc.)
-   - Coordinador establece conexión P2P con el nodo seleccionado
+2. **Task submission:**
+   - User writes code in the coordinator
+   - Coordinator requests list of nodes from server
+   - Coordinator selects node based on strategy (random, least-loaded, etc.)
+   - Coordinator establishes P2P connection with selected node
 
-3. **Ejecución:**
-   - Nodo recibe tarea y cambia estado a 'busy'
-   - Nodo envía código al Web Worker
-   - Worker ejecuta código de forma aislada
-   - Worker devuelve resultado o error
+3. **Execution:**
+   - Node receives task and changes status to 'busy'
+   - Node sends code to Web Worker
+   - Worker executes code in isolation
+   - Worker returns result or error
 
-4. **Resultado:**
-   - Nodo envía resultado al coordinador vía P2P
-   - Nodo cambia estado a 'idle' e incrementa contador de tareas
-   - Coordinador muestra resultado al usuario
-   - Nodo queda disponible para nuevas tareas
+4. **Result:**
+   - Node sends result to coordinator via P2P
+   - Node changes status to 'idle' and increments task counter
+   - Coordinator shows result to user
+   - Node becomes available for new tasks
 
-## Ejemplo de Uso Completo
+## Complete Usage Example
 
-**Paso 1: Iniciar servidor de señalización**
+**Step 1: Start signaling server**
 ```bash
 cd signaling-server
 npm install
 npm run dev
 ```
 
-**Paso 2: Iniciar uno o más nodos**
+**Step 2: Start one or more nodes**
 ```bash
 cd peer-node
 npm install
 npm run watch
 
-# En otro terminal o navegador
-# Abrir www/index.html en el navegador
+# In another terminal or browser
+# Open www/index.html in the browser
 ```
 
-**Paso 3: Iniciar coordinador**
+**Step 3: Start coordinator**
 ```bash
 cd task-coordinator
 npm install
 npm run watch
 
-# En otro terminal o navegador
-# Abrir www/index.html en el navegador
+# In another terminal or browser
+# Open www/index.html in the browser
 ```
 
-**Paso 4: Enviar tarea desde el coordinador**
-- Escribir código en el área de texto (ej: `function() { return 2 + 2; }`)
-- Seleccionar estrategia de load balancing
-- Hacer clic en "Ejecutar Tarea"
-- Ver resultado en tiempo real
+**Step 4: Send task from coordinator**
+- Write code in the text area (e.g.: `function() { return 2 + 2; }`)
+- Select load balancing strategy
+- Click "Ejecutar Tarea" (Execute Task)
+- See result in real-time
 
-## Ejemplos de Tareas
+## Task Examples
 
-**Tarea simple:**
+**Note:** The system is currently only prepared to execute JavaScript code. All tasks must be written as JavaScript functions.
+
+**Simple task:**
 ```javascript
 function() {
   return 2 + 2;
 }
 ```
 
-**Tarea con cálculos:**
+**Task with calculations:**
 ```javascript
 function() {
   let sum = 0;
@@ -239,7 +285,7 @@ function() {
 }
 ```
 
-**Tarea con datos:**
+**Task with data:**
 ```javascript
 function() {
   const data = [1, 2, 3, 4, 5];
@@ -247,45 +293,36 @@ function() {
 }
 ```
 
-## Stack Tecnológico
+## Implemented Features
 
-- **Lenguaje:** TypeScript
-- **Frontend:** HTML/CSS
-- **P2P:** Simple-Peer (WebRTC)
-- **Señalización:** Node.js + Express + ws (WebSocket)
-- **Móvil:** Capacitor
-- **Sandboxing:** Web Worker + new Function()
+- ✅ Signaling server with node registry
+- ✅ Task distribution system (load balancing)
+- ✅ Coordinator client that sends tasks
+- ✅ Automatic node selection (Random, Least Loaded, Round Robin)
+- ✅ Node status reporting (idle/busy)
+- ✅ Secure execution in Web Worker
+- ✅ Web interface for coordinator and nodes
 
-## Características Implementadas
+## Next Steps
 
-- ✅ Servidor de señalización con registro de nodos
-- ✅ Sistema de distribución de tareas (load balancing)
-- ✅ Cliente coordinador que envía tareas
-- ✅ Selección automática de nodos (Random, Least Loaded, Round Robin)
-- ✅ Reporte de estado de nodos (idle/busy)
-- ✅ Ejecución segura en Web Worker
-- ✅ Interfaz web para coordinador y nodos
+- [ ] Add peer authentication
+- [ ] Improve security sandboxing (isolated-vm)
+- [ ] Advanced node metrics and monitoring
+- [ ] Result persistence
+- [ ] Queue system for multiple tasks
+- [ ] Support for long-running tasks
+- [ ] Automatic reconnection on failure
 
-## Próximos Pasos
+## Security
 
-- [ ] Añadir autenticación de peers
-- [ ] Mejorar sandboxing de seguridad (isolated-vm)
-- [ ] Métricas y monitoreo avanzado de nodos
-- [ ] Persistencia de resultados
-- [ ] Sistema de colas para múltiples tareas
-- [ ] Soporte para tareas de larga duración
-- [ ] Reconexión automática en caso de fallo
-
-## Seguridad
-
-**⚠️ ADVERTENCIA:** Este es un prototipo para hackathon. NO usar en producción sin:
-- Sandboxing robusto (isolated-vm, containers)
-- Autenticación y autorización
-- Encriptación end-to-end
+**⚠️ WARNING:** This is a hackathon prototype. DO NOT use in production without:
+- Robust sandboxing (isolated-vm, containers)
+- Authentication and authorization
+- End-to-end encryption
 - Rate limiting
-- Validación de código
-- Límites de recursos (CPU, memoria, tiempo)
+- Code validation
+- Resource limits (CPU, memory, time)
 
-## Licencia
+## License
 
-MIT License - Proyecto educativo para hackathon
+MIT License - Educational hackathon project
