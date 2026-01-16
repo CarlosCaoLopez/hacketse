@@ -1,7 +1,5 @@
 # PWS (Peer Web Services): P2P Distributed Computing Network
 
----
-
 **PWS (Peer Web Services)** is an innovative distributed computing platform that transforms old smartphones and unused devices into powerful compute nodes within a peer-to-peer network. Built for the HackETSE hackathon, this project demonstrates how to leverage WebRTC technology to create a decentralized task execution system without requiring traditional server infrastructure for compute operations.
 
 ## Tech Stack
@@ -26,6 +24,16 @@ PWS enables **distributed code execution** by connecting idle devices (especiall
 - **Isolated Code Execution**: Tasks run in Web Workers for basic sandboxing and security
 - **Mobile-First Design**: Built with Capacitor to deploy compute nodes on Android/iOS devices
 - **Zero Infrastructure**: Only requires a lightweight signaling server for peer discovery and WebRTC setup
+
+### Screenshots
+
+**Task Coordinator Interface:**
+
+![Task Coordinator](media/task-coordinator.png)
+
+**Peer Node Interface:**
+
+![Peer Node](media/peer-node.png)
 
 ## Why PWS?
 
@@ -124,8 +132,11 @@ npm run watch     # Compile in watch mode (auto-recompilation)
 **Run in browser (development):**
 ```bash
 # 1. Compile TypeScript (see above)
-# 2. Open www/index.html in your browser
-# 3. Make sure the signaling server is running
+# 2. Serve with HTTP server (required due to CORS)
+cd www
+http-server -p 8081
+# 3. Open http://localhost:8081 in your browser
+# 4. Make sure the signaling server is running
 ```
 
 **Compile for mobile:**
@@ -170,9 +181,12 @@ npm run watch     # Compile in watch mode (auto-recompilation)
 **Run:**
 ```bash
 # 1. Compile TypeScript (see above)
-# 2. Open www/index.html in your browser
-# 3. Make sure the signaling server is running
-# 4. Make sure you have at least one node connected
+# 2. Serve with HTTP server (required due to CORS)
+cd www
+http-server -p 8080
+# 3. Open http://localhost:8080 in your browser
+# 4. Make sure the signaling server is running
+# 5. Make sure you have at least one node connected
 ```
 
 **Functionality:**
@@ -230,6 +244,29 @@ Executes user JavaScript code in isolation (compiled to `www/dist/worker-sandbox
 
 ## Complete Usage Example
 
+### ⚠️ IMPORTANT: CORS and HTTP Server
+
+Modern browsers **block ES6 modules when opened directly from file system** (file://) due to CORS policy. You **MUST serve the HTML files through an HTTP server**.
+
+**Solutions:**
+
+**Option 1: Using http-server (Recommended)**
+```bash
+# Install globally
+npm install -g http-server
+```
+
+**Option 2: Using VS Code Live Server**
+- Install "Live Server" extension
+- Right-click on `www/index.html` → "Open with Live Server"
+
+**Option 3: Using Python**
+```bash
+python -m http.server 8080
+```
+
+### Setup Steps
+
 **Step 1: Start signaling server**
 ```bash
 cd signaling-server
@@ -239,25 +276,33 @@ npm run dev
 
 **Step 2: Start one or more nodes**
 ```bash
+# Terminal 1: Compile TypeScript
 cd peer-node
 npm install
-npm run watch
+npm run build  # or npm run watch for auto-recompilation
 
-# In another terminal or browser
-# Open www/index.html in the browser
+# Terminal 2: Serve with HTTP server
+cd peer-node/www
+http-server -p 8081
+# Open http://localhost:8081 in browser
 ```
 
 **Step 3: Start coordinator**
 ```bash
+# Terminal 1: Compile TypeScript
 cd task-coordinator
 npm install
-npm run watch
+npm run build  # or npm run watch for auto-recompilation
 
-# In another terminal or browser
-# Open www/index.html in the browser
+# Terminal 2: Serve with HTTP server
+cd task-coordinator/www
+http-server -p 8080
+# Open http://localhost:8080 in browser
 ```
 
 **Step 4: Send task from coordinator**
+- Open http://localhost:8080 in browser
+- Verify "Estado: Conectado" and "Nodos disponibles: 1" (or more)
 - Write code in the text area (e.g.: `function() { return 2 + 2; }`)
 - Select load balancing strategy
 - Click "Ejecutar Tarea" (Execute Task)
